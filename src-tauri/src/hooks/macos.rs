@@ -1,4 +1,8 @@
-use std::{sync::atomic::{AtomicBool, AtomicI32, AtomicU8, Ordering}, thread, time::Duration};
+use std::{
+    sync::atomic::{AtomicBool, AtomicI32, AtomicU8, Ordering},
+    thread,
+    time::Duration,
+};
 
 use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, PhysicalPosition, Position};
 
@@ -28,6 +32,7 @@ struct CGRect {
 extern "C" {
     fn CGMainDisplayID() -> CGDirectDisplayID;
     fn CGDisplayBounds(display: CGDirectDisplayID) -> CGRect;
+    fn CGEventSourceSecondsSinceLastEventType(source_state: u32, event_type: u32) -> f64;
 }
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
@@ -37,6 +42,11 @@ static LAST_STATE: AtomicU8 = AtomicU8::new(255);
 
 const WINDOW_MARGIN: i32 = 24;
 const BAR_THICKNESS: i32 = 10;
+const ACTIVE_POLL_MS: u64 = 300;
+const IDLE_POLL_MS: u64 = 1500;
+const IDLE_THRESHOLD_SECS: f64 = 5.0;
+const CG_EVENT_SOURCE_STATE_COMBINED_SESSION_STATE: u32 = 1;
+const CG_ANY_INPUT_EVENT_TYPE: u32 = 0xFFFFFFFF;
 
 #[derive(Clone, Copy)]
 pub enum DisplayMode {
@@ -131,22 +141,41 @@ pub fn start_macos_input_monitor(app: AppHandle) {
 
     let app_for_poll = app.clone();
     thread::spawn(move || {
+        let mut idle_mode = false;
         while RUNNING.load(Ordering::SeqCst) {
-            let app_inner = app_for_poll.clone();
-            let _ = app_for_poll.run_on_main_thread(move || {
-                let state = ime::current_state();
-                let code = match state {
-                    ime::ImeState::On => 1,
-                    ime::ImeState::Off => 0,
-                    ime::ImeState::Unknown => 2,
-                };
-                let prev = LAST_STATE.swap(code, Ordering::SeqCst);
-                if prev != code {
-                    shrink_window_to_badge(&app_inner);
-                    crate::emit_badge(&app_inner, true, state, "ime");
-                }
-            });
-            thread::sleep(Duration::from_millis(300));
+            let idle_secs = unsafe {
+                CGEventSourceSecondsSinceLastEventType(
+                    CG_EVENT_SOURCE_STATE_COMBINED_SESSION_STATE,
+                    CG_ANY_INPUT_EVENT_TYPE,
+                )
+            };
+
+            if idle_secs >= IDLE_THRESHOLD_SECS {
+                idle_mode = true;
+            } else if idle_mode {
+                idle_mode = false;
+                LAST_STATE.store(255, Ordering::SeqCst);
+            }
+
+            if !idle_mode {
+                let app_inner = app_for_poll.clone();
+                let _ = app_for_poll.run_on_main_thread(move || {
+                    let state = ime::current_state();
+                    let code = match state {
+                        ime::ImeState::On => 1,
+                        ime::ImeState::Off => 0,
+                        ime::ImeState::Unknown => 2,
+                    };
+                    let prev = LAST_STATE.swap(code, Ordering::SeqCst);
+                    if prev != code {
+                        shrink_window_to_badge(&app_inner);
+                        crate::emit_badge(&app_inner, true, state, "ime");
+                    }
+                });
+            }
+
+            let delay = if idle_mode { IDLE_POLL_MS } else { ACTIVE_POLL_MS };
+            thread::sleep(Duration::from_millis(delay));
         }
     });
 }
