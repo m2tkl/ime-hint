@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IME Hint Settings</title>
+    <script type="module" src="/settings.js" defer></script>
+  </head>
+  <body>
+    <section class="settings">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Settings</h2>
+        </div>
+        <div class="panel-body">
+          <div class="section-block">
+            <div class="section-title">Display mode</div>
+            <div class="divider"></div>
+            <div class="mode-group">
+              <div class="radio-row">
+                <label class="radio">
+                  <input type="radio" name="display-mode" value="badge" checked />
+                  Badge
+                </label>
+                <label class="radio">
+                  <input type="radio" name="display-mode" value="bar" />
+                  Bar
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="section-block">
+            <div class="section-title" id="mode-section-title">Badge settings</div>
+            <div class="divider"></div>
+            <div class="field field-bar">
+              <label>
+                Bar position
+                <select id="setting-bar-position">
+                  <option value="top">Top</option>
+                  <option value="right">Right</option>
+                  <option value="left">Left</option>
+                  <option value="bottom">Bottom</option>
+                </select>
+              </label>
+            </div>
+            <div class="field field-badge">
+              <label>
+                Badge width
+                <input id="setting-width" type="number" min="140" step="10" />
+              </label>
+            </div>
+            <div class="field field-badge">
+              <label>
+                Badge height
+                <input id="setting-height" type="number" min="60" step="10" />
+              </label>
+            </div>
+          </div>
+          <div class="section-block">
+            <div class="section-title">Common</div>
+            <div class="divider"></div>
+            <div class="field field-common">
+              <label>
+                On color
+                <input id="setting-color-on" type="color" />
+              </label>
+            </div>
+            <div class="field field-common">
+              <label>
+                Off color
+                <input id="setting-color-off" type="color" />
+              </label>
+            </div>
+            <div class="field field-common">
+              <label>
+                Unknown color
+                <input id="setting-color-unknown" type="color" />
+              </label>
+            </div>
+            <div class="field field-common">
+              <label>
+                Background opacity
+                <input id="setting-bg-opacity" type="range" min="0.05" max="0.6" step="0.05" />
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="panel-footer">
+          <button id="settings-reset" type="button">Reset</button>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
