@@ -91,7 +91,9 @@ jobs:
             patchelf
 
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          corepack enable
+          corepack prepare pnpm@10 --activate
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
