@@ -29,6 +29,8 @@ case "${confirm}" in
   [yY][eE][sS]|[yY])
     git tag "${new_tag}"
     echo "Created tag: ${new_tag}"
+    git push origin "${new_tag}"
+    echo "Pushed tag: ${new_tag}"
     ;;
   *)
     echo "Canceled."
